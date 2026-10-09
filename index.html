@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADMIN KUNGKANG - Secure Vault</title>
+    <title>ADMIN KUNGKANG - Supabase Secure Vault</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- CryptoJS for secure client-side encryption -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- Supabase JS Client via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -37,46 +39,41 @@
         <div class="bg-dark-900 border border-dark-800 rounded-3xl w-full max-w-md p-8 shadow-2xl flex flex-col gap-6 text-center">
             <div class="flex flex-col items-center gap-3">
                 <div class="bg-indigo-600/20 text-indigo-400 p-4 rounded-2xl text-xl">
-                    <i class="fa-solid fa-shield-halved"></i>
+                    <i class="fa-solid fa-cloud-lock"></i>
                 </div>
-                <h2 id="auth-title" class="font-bold text-white text-xl">Unlock Your Vault</h2>
-                <p id="auth-desc" class="text-xs text-slate-400">Enter your master password to decrypt and access your protected texts.</p>
+                <h2 id="auth-title" class="font-bold text-white text-xl">Supabase Cloud Vault</h2>
+                <p id="auth-desc" class="text-xs text-slate-400">Enter your master password to fetch and decrypt your cloud data.</p>
             </div>
             <div class="flex flex-col gap-3">
-                <input type="password" id="auth-password" placeholder="Enter password..." 
+                <input type="password" id="auth-password" placeholder="Enter master password..." 
                     class="w-full bg-dark-950 border border-dark-800 rounded-xl px-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-center font-mono">
                 <button onclick="handleAuthentication()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-3.5 rounded-xl font-semibold transition shadow-lg shadow-indigo-600/30">
-                    Unlock Vault
+                    Connect & Unlock
                 </button>
             </div>
-            <p id="auth-error" class="text-xs text-rose-400 font-medium hidden">Incorrect password! Please try again.</p>
+            <p id="auth-error" class="text-xs text-rose-400 font-medium hidden">Incorrect password or unable to connect!</p>
         </div>
     </div>
 
     <!-- Left Sidebar Panel for Tabs -->
     <aside class="w-full md:w-72 bg-dark-900 border-r border-dark-800 flex flex-col justify-between shrink-0 select-none">
         <div>
-            <!-- Sidebar Header / Brand -->
             <div class="p-5 border-b border-dark-800 flex items-center justify-between">
                 <div>
                     <h1 class="font-bold tracking-wider text-sm text-slate-100 uppercase">ADMIN KUNGKANG</h1>
-                    <p class="text-[10px] text-slate-400">masterkonams</p>
+                    <p class="text-[10px] text-slate-400">Supabase Cloud Synced</p>
                 </div>
                 <button onclick="lockVault()" title="Lock Vault" class="text-slate-400 hover:text-rose-400 bg-dark-800 hover:bg-dark-700 p-2 rounded-xl transition">
                     <i class="fa-solid fa-lock text-xs"></i>
                 </button>
             </div>
 
-            <!-- Tabs Navigation List -->
             <div class="p-3">
                 <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">Workspace Tabs</div>
-                <div id="tabs-container" class="flex flex-col gap-1.5 max-h-[calc(100vh-220px)] overflow-y-auto">
-                    <!-- Dynamic side tabs injected here -->
-                </div>
+                <div id="tabs-container" class="flex flex-col gap-1.5 max-h-[calc(100vh-220px)] overflow-y-auto"></div>
             </div>
         </div>
 
-        <!-- Sidebar Footer / Add Button -->
         <div class="p-4 border-t border-dark-800 bg-dark-950/40">
             <button onclick="openNewTabModal()" id="sidebar-add-btn" class="w-full text-white text-xs py-3 px-4 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg" style="background-color: var(--theme-color)">
                 <i class="fa-solid fa-plus text-[10px]"></i> Add Tab Slot
@@ -86,12 +83,10 @@
 
     <!-- Main Workspace Container -->
     <main class="flex-1 min-h-screen p-4 sm:p-8 flex flex-col gap-6 max-w-5xl mx-auto w-full">
-        
-        <!-- Active Tab Header Info -->
         <div class="flex items-center justify-between border-b border-dark-800 pb-4">
             <div>
                 <h2 id="current-tab-title" class="text-xl font-bold text-white tracking-tight">Loading...</h2>
-                <p class="text-xs text-slate-400 mt-0.5">Type imo gusto nya <span id="enter-highlight" class="font-semibold" style="color: var(--theme-color)">Enter</span> para ma save</p>
+                <p class="text-xs text-slate-400 mt-0.5">Type text and press <span id="enter-highlight" class="font-semibold" style="color: var(--theme-color)">Enter</span> to save to cloud</p>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="clearCurrentTabEntries()" class="text-xs text-rose-400 hover:text-white bg-dark-900 hover:bg-rose-600/80 border border-dark-800 hover:border-rose-500 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 font-semibold">
@@ -100,7 +95,6 @@
             </div>
         </div>
 
-        <!-- Continuous Input Box -->
         <div id="input-box-wrapper" class="bg-dark-900 border border-dark-800 rounded-2xl p-4 sm:p-5 shadow-2xl transition">
             <div class="flex items-center justify-between pb-3 mb-3 border-b border-dark-800 text-xs text-slate-400">
                 <span id="live-stream-label" class="flex items-center gap-2 font-semibold" style="color: var(--theme-color)">
@@ -112,11 +106,7 @@
                 class="w-full bg-transparent text-slate-100 placeholder-slate-600 text-sm focus:outline-none resize-none font-mono"></textarea>
         </div>
 
-        <!-- Copy-Ready Boxes Stream Container -->
-        <div id="entries-container" class="flex flex-col gap-4 pb-16">
-            <!-- Dynamic entries load here -->
-        </div>
-
+        <div id="entries-container" class="flex flex-col gap-4 pb-16"></div>
     </main>
 
     <!-- Modal: Add New Tab -->
@@ -146,17 +136,23 @@
         <i class="fa-solid fa-circle-check text-sm"></i> <span id="toast-msg">Copied to clipboard!</span>
     </div>
 
-    <!-- Application Script Logic -->
+    <!-- Supabase & App Script Logic -->
     <script>
+        // --- REPLACE THESE WITH YOUR SUPABASE DETAILS ---
+        const SUPABASE_URL = 'https://yrihwijpytawpxvcfxvb.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyaWh3aWpweXRhd3B4dmNmeHZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NzI3NzUsImV4cCI6MjEwNzE0ODc3NX0.bCoFGFmhCtz53q6u7BIOLhBYeH1Km28wKS_B7IYjKLM';
+        
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         const neonColors = [
-            { hex: '#6366f1', rgb: '99, 102, 241' },   // Indigo
-            { hex: '#10b981', rgb: '16, 185, 129' },  // Emerald
-            { hex: '#8b5cf6', rgb: '139, 92, 246' },  // Violet
-            { hex: '#f43f5e', rgb: '244, 63, 94' },   // Rose
-            { hex: '#f59e0b', rgb: '245, 158, 11' },  // Amber
-            { hex: '#06b6d4', rgb: '6, 182, 212' },   // Cyan
-            { hex: '#ec4899', rgb: '236, 72, 153' },  // Pink
-            { hex: '#84cc16', rgb: '132, 204, 22' }   // Lime
+            { hex: '#6366f1', rgb: '99, 102, 241' },
+            { hex: '#10b981', rgb: '16, 185, 129' },
+            { hex: '#8b5cf6', rgb: '139, 92, 246' },
+            { hex: '#f43f5e', rgb: '244, 63, 94' },
+            { hex: '#f59e0b', rgb: '245, 158, 11' },
+            { hex: '#06b6d4', rgb: '6, 182, 212' },
+            { hex: '#ec4899', rgb: '236, 72, 153' },
+            { hex: '#84cc16', rgb: '132, 204, 22' }
         ];
 
         let masterPassword = '';
@@ -166,46 +162,41 @@
             activeTabId: 'tab_1',
             tabs: [{ id: 'tab_1', name: 'Main Scripts', colorIndex: 0 }],
             entries: {
-                'tab_1': [{ id: 'e_1', text: 'print("Encrypted sidebar vault is active!")', timestamp: new Date().toLocaleTimeString() }]
+                'tab_1': [{ id: 'e_1', text: 'print("Supabase cloud sync active!")', timestamp: new Date().toLocaleTimeString() }]
             }
         };
-
-        // Check if password has been set previously
-        const encryptedData = localStorage.getItem('secure_text_database_encrypted');
-        if (!encryptedData) {
-            document.getElementById('auth-title').textContent = 'Set Master Password';
-            document.getElementById('auth-desc').textContent = 'Create a secure password to encrypt your vault on this browser.';
-        }
 
         document.getElementById('auth-password').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') handleAuthentication();
         });
 
-        function handleAuthentication() {
+        async function handleAuthentication() {
             const passInput = document.getElementById('auth-password').value;
             if (!passInput) return;
-
             masterPassword = passInput;
-            const encryptedStore = localStorage.getItem('secure_text_database_encrypted');
 
-            if (!encryptedStore) {
-                // First time setup: encrypt default db and save
-                db = defaultDb;
-                saveState();
-                unlockApp();
-            } else {
-                try {
-                    // Try to decrypt data
-                    const bytes = CryptoJS.AES.decrypt(encryptedStore, masterPassword);
+            try {
+                let { data, error } = await _supabase
+                    .from('vault_data')
+                    .select('encrypted_data')
+                    .eq('id', 1)
+                    .single();
+
+                if (error || !data) {
+                    db = defaultDb;
+                    await saveState();
+                    unlockApp();
+                } else {
+                    const bytes = CryptoJS.AES.decrypt(data.encrypted_data, masterPassword);
                     const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
                     if (!decryptedString) throw new Error('Invalid password');
-                    
+
                     db = JSON.parse(decryptedString);
                     unlockApp();
-                } catch (err) {
-                    document.getElementById('auth-error').classList.remove('hidden');
-                    document.getElementById('auth-password').value = '';
                 }
+            } catch (err) {
+                document.getElementById('auth-error').classList.remove('hidden');
+                document.getElementById('auth-password').value = '';
             }
         }
 
@@ -224,10 +215,13 @@
             document.getElementById('auth-password').focus();
         }
 
-        function saveState() {
+        async function saveState() {
             if (!db || !masterPassword) return;
             const encryptedString = CryptoJS.AES.encrypt(JSON.stringify(db), masterPassword).toString();
-            localStorage.setItem('secure_text_database_encrypted', encryptedString);
+            
+            await _supabase
+                .from('vault_data')
+                .upsert({ id: 1, encrypted_data: encryptedString });
         }
 
         function getActiveColor() {
@@ -319,10 +313,10 @@
             });
         }
 
-        function switchTab(id) {
+        async function switchTab(id) {
             db.activeTabId = id;
             if (!db.entries[id]) db.entries[id] = [];
-            saveState();
+            await saveState();
             renderTabs();
             renderEntries();
         }
@@ -337,7 +331,7 @@
             document.getElementById('tab-modal').classList.add('hidden');
         }
 
-        function createTab() {
+        async function createTab() {
             const nameInput = document.getElementById('new-tab-name');
             const name = nameInput.value.trim();
             if (!name) return;
@@ -349,13 +343,13 @@
             db.entries[newId] = [];
             db.activeTabId = newId;
 
-            saveState();
+            await saveState();
             closeNewTabModal();
             renderTabs();
             renderEntries();
         }
 
-        function deleteTab(id) {
+        async function deleteTab(id) {
             if (db.tabs.length <= 1) return;
             db.tabs = db.tabs.filter(t => t.id !== id);
             delete db.entries[id];
@@ -364,27 +358,27 @@
                 db.activeTabId = db.tabs[0].id;
             }
 
-            saveState();
+            await saveState();
             renderTabs();
             renderEntries();
         }
 
-        function clearCurrentTabEntries() {
+        async function clearCurrentTabEntries() {
             if (confirm('Clear all texts in this tab?')) {
                 db.entries[db.activeTabId] = [];
-                saveState();
+                await saveState();
                 renderEntries();
             }
         }
 
-        function deleteEntry(entryId) {
+        async function deleteEntry(entryId) {
             db.entries[db.activeTabId] = db.entries[db.activeTabId].filter(e => e.id !== entryId);
-            saveState();
+            await saveState();
             renderEntries();
         }
 
         const liveInput = document.getElementById('live-input');
-        liveInput.addEventListener('keydown', function(e) {
+        liveInput.addEventListener('keydown', async function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 const text = liveInput.value.trim();
@@ -400,7 +394,7 @@
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                 });
 
-                saveState();
+                await saveState();
                 liveInput.value = '';
                 renderEntries();
             }
