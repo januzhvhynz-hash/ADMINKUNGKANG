@@ -137,23 +137,52 @@
         </div>
     </main>
 
-    <!-- Floating, Draggable & Resizable Discord Color Tool Window -->
-    <div id="discord-floating-window" class="fixed top-12 right-12 z-40 w-full sm:w-[500px] h-[550px] bg-dark-900/95 border border-dark-700 rounded-2xl shadow-2xl flex flex-col hidden backdrop-blur-md overflow-hidden min-w-[320px] min-h-[250px] resize">
-        <!-- Floating Window Title Header (Draggable Handle) -->
+    <!-- Floating, Draggable & Resizable Window with Rebane-Style Color Generator -->
+    <div id="discord-floating-window" class="fixed top-12 right-12 z-40 w-full sm:w-[560px] h-[580px] bg-dark-900/95 border border-dark-700 rounded-2xl shadow-2xl flex flex-col hidden backdrop-blur-md overflow-hidden min-w-[340px] min-h-[350px] resize">
+        <!-- Header Handle -->
         <div id="discord-window-header" class="p-3 bg-dark-950 border-b border-dark-800 flex items-center justify-between cursor-move select-none">
             <div class="flex items-center gap-2.5">
                 <i class="fa-brands fa-discord text-indigo-400 text-sm"></i>
-                <span class="text-xs font-bold text-white tracking-wide">Discord Color Generator</span>
+                <span class="text-xs font-bold text-white">Rebane Discord Color Generator</span>
             </div>
             <div class="flex items-center gap-2">
+                <a href="https://rebane2001.com/discord-colored-text-generator/" target="_blank" class="text-xs text-indigo-400 hover:text-white bg-dark-800 px-2 py-1 rounded-lg border border-dark-700 flex items-center gap-1 transition">
+                    <i class="fa-solid fa-up-right-from-square text-[10px]"></i> Open Web
+                </a>
                 <button onclick="toggleDiscordFloatingModal()" class="w-6 h-6 rounded-lg bg-dark-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center transition">
                     <i class="fa-solid fa-xmark text-xs"></i>
                 </button>
             </div>
         </div>
-        <!-- Embedded Tool Iframe -->
-        <div class="flex-1 w-full bg-dark-950">
-            <iframe src="https://rebane2001.com/discord-colored-text-generator/" class="w-full h-full border-0"></iframe>
+
+        <!-- Rebane Native Color Editor Body -->
+        <div class="flex-1 p-4 bg-dark-950 flex flex-col gap-3 overflow-y-auto font-mono text-xs text-slate-200">
+            <p class="text-[11px] text-slate-400 font-sans">Highlight any text in the box below and click a color or formatting button to style that specific text selection:</p>
+            
+            <!-- Formatting & Color Buttons -->
+            <div class="flex flex-wrap gap-1.5 bg-dark-900 p-2 rounded-xl border border-dark-800 select-none">
+                <button onclick="applyRebaneStyle('1')" class="bg-dark-800 hover:bg-dark-700 text-white px-2.5 py-1 rounded-lg font-bold border border-dark-700">Bold</button>
+                <button onclick="applyRebaneStyle('4')" class="bg-dark-800 hover:bg-dark-700 text-white px-2.5 py-1 rounded-lg underline border border-dark-700">Underline</button>
+                <button onclick="applyRebaneStyle('30')" class="bg-slate-800 text-slate-400 px-2.5 py-1 rounded-lg border border-slate-700">Gray</button>
+                <button onclick="applyRebaneStyle('31')" class="bg-rose-950/80 hover:bg-rose-900 text-rose-400 border border-rose-800 px-2.5 py-1 rounded-lg font-semibold">Red</button>
+                <button onclick="applyRebaneStyle('32')" class="bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 px-2.5 py-1 rounded-lg font-semibold">Green</button>
+                <button onclick="applyRebaneStyle('33')" class="bg-amber-950/80 hover:bg-amber-900 text-amber-400 border border-amber-800 px-2.5 py-1 rounded-lg font-semibold">Yellow</button>
+                <button onclick="applyRebaneStyle('34')" class="bg-blue-950/80 hover:bg-blue-900 text-blue-400 border border-blue-800 px-2.5 py-1 rounded-lg font-semibold">Blue</button>
+                <button onclick="applyRebaneStyle('35')" class="bg-purple-950/80 hover:bg-purple-900 text-purple-400 border border-purple-800 px-2.5 py-1 rounded-lg font-semibold">Pink</button>
+                <button onclick="applyRebaneStyle('36')" class="bg-cyan-950/80 hover:bg-cyan-900 text-cyan-400 border border-cyan-800 px-2.5 py-1 rounded-lg font-semibold">Cyan</button>
+                <button onclick="applyRebaneStyle('37')" class="bg-slate-200 hover:bg-white text-slate-900 px-2.5 py-1 rounded-lg font-semibold border border-white">White</button>
+            </div>
+
+            <!-- Text Editable Area -->
+            <div id="rebane-editor" contenteditable="true" class="flex-1 bg-dark-900 border border-dark-800 rounded-xl p-3.5 text-white focus:outline-none focus:border-indigo-500 overflow-y-auto whitespace-pre-wrap min-h-[160px] leading-relaxed">Welcome to Discord ANSI Generator! Highlight words and click a color above...</div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2">
+                <button onclick="clearRebaneEditor()" class="bg-dark-800 hover:bg-dark-700 text-slate-400 hover:text-white px-3 py-2.5 rounded-xl border border-dark-700 transition font-sans text-xs">Clear</button>
+                <button onclick="copyRebaneAnsiCode()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 font-sans text-xs">
+                    <i class="fa-solid fa-copy"></i> Copy Formatted Discord ANSI Code
+                </button>
+            </div>
         </div>
     </div>
 
@@ -468,6 +497,65 @@
             win.classList.toggle('hidden');
         }
 
+        // --- Rebane-Style Selection Formatting Engine ---
+        function applyRebaneStyle(ansiCode) {
+            const sel = window.getSelection();
+            if (!sel.rangeCount || sel.isCollapsed) {
+                showToast('Highlight text first!');
+                return;
+            }
+            const range = sel.getRangeAt(0);
+            const span = document.createElement('span');
+            span.dataset.ansi = ansiCode;
+            
+            const ansiMap = {
+                '1': 'font-weight: bold;',
+                '4': 'text-decoration: underline;',
+                '30': 'color: #4f545c;',
+                '31': 'color: #f87171;',
+                '32': 'color: #34d399;',
+                '33': 'color: #fbbf24;',
+                '34': 'color: #60a5fa;',
+                '35': 'color: #c084fc;',
+                '36': 'color: #22d3ee;',
+                '37': 'color: #ffffff;'
+            };
+            span.style.cssText = ansiMap[ansiCode] || '';
+            
+            try {
+                range.surroundContents(span);
+            } catch(e) {
+                document.execCommand('insertHTML', false, `<span data-ansi="${ansiCode}" style="${ansiMap[ansiCode]}">${sel.toString()}</span>`);
+            }
+        }
+
+        function clearRebaneEditor() {
+            document.getElementById('rebane-editor').innerHTML = '';
+        }
+
+        function copyRebaneAnsiCode() {
+            const editor = document.getElementById('rebane-editor');
+            let ansiOutput = "```ansi\n";
+            
+            function parseNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    ansiOutput += node.textContent;
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const ansi = node.dataset.ansi;
+                    if (ansi) ansiOutput += `\u001b[${ansi}m`;
+                    for (let child of node.childNodes) parseNode(child);
+                    if (ansi) ansiOutput += `\u001b[0m`;
+                }
+            }
+            
+            for (let child of editor.childNodes) parseNode(child);
+            ansiOutput += "\n```";
+
+            navigator.clipboard.writeText(ansiOutput).then(() => {
+                showToast('Copied Rebane ANSI code!');
+            });
+        }
+
         function openEditModal(entryId) {
             const entries = db.entries[db.activeTabId] || [];
             const entry = entries.find(e => e.id === entryId);
@@ -597,6 +685,7 @@
         let isDragging = false, offsetPos = [0, 0];
 
         winHeader.addEventListener('mousedown', function(e) {
+            if (e.target.closest('a') || e.target.closest('button')) return;
             isDragging = true;
             offsetPos = [floatingWin.offsetLeft - e.clientX, floatingWin.offsetTop - e.clientY];
         });
