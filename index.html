@@ -68,9 +68,22 @@
                 </button>
             </div>
 
-            <div class="p-3">
-               
-                <div id="tabs-container" class="flex flex-col gap-1.5 max-h-[calc(100vh-220px)] overflow-y-auto"></div>
+            <!-- Sidebar Navigation Links / Tools -->
+            <div class="p-3 flex flex-col gap-3">
+                <div>
+                    <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">Workspace Tabs</div>
+                    <div id="tabs-container" class="flex flex-col gap-1.5 max-h-[calc(100vh-320px)] overflow-y-auto"></div>
+                </div>
+
+                <!-- Tool Toggle Buttons -->
+                <div class="pt-2 border-t border-dark-800 flex flex-col gap-2">
+                    <button onclick="openDiscordModal()" class="w-full bg-dark-800 hover:bg-dark-700 text-indigo-400 text-xs py-2.5 px-3 rounded-xl font-semibold transition flex items-center gap-2.5 border border-dark-700">
+                        <i class="fa-brands fa-discord text-sm"></i> Discord Color Tool
+                    </button>
+                    <button onclick="createCmdTab()" class="w-full bg-black/40 hover:bg-black/60 text-yellow-400 text-xs py-2.5 px-3 rounded-xl font-semibold transition flex items-center gap-2.5 border border-yellow-500/30 font-mono">
+                        <i class="fa-solid fa-terminal text-sm text-yellow-400"></i> &gt; CMD Terminal Tab
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -86,7 +99,7 @@
         <div class="flex items-center justify-between border-b border-dark-800 pb-4">
             <div>
                 <h2 id="current-tab-title" class="text-xl font-bold text-white tracking-tight">Loading...</h2>
-                <p class="text-xs text-slate-400 mt-0.5">Type text and press <span id="enter-highlight" class="font-semibold" style="color: var(--theme-color)">Enter</span> to save to cloud</p>
+                <p id="sub-helper-text" class="text-xs text-slate-400 mt-0.5">Type text and press <span id="enter-highlight" class="font-semibold" style="color: var(--theme-color)">Enter</span> to save to cloud</p>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="clearCurrentTabEntries()" class="text-xs text-rose-400 hover:text-white bg-dark-900 hover:bg-rose-600/80 border border-dark-800 hover:border-rose-500 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 font-semibold">
@@ -131,6 +144,51 @@
         </div>
     </div>
 
+    <!-- Modal: Edit Entry Text -->
+    <div id="edit-modal" class="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-dark-900 border border-dark-800 rounded-3xl w-full max-w-2xl p-6 sm:p-7 shadow-2xl flex flex-col gap-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2.5 rounded-xl" style="background-color: rgba(var(--theme-rgb), 0.2); color: var(--theme-color)"><i class="fa-solid fa-pen-to-square text-sm"></i></div>
+                    <h3 class="font-bold text-white text-base">Edit Saved Text</h3>
+                </div>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-white transition w-8 h-8 rounded-full bg-dark-800 flex items-center justify-center"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div>
+                <input type="hidden" id="edit-entry-id">
+                <textarea id="edit-entry-textarea" rows="6" 
+                    class="w-full bg-dark-950 border border-dark-800 rounded-xl p-4 text-sm text-slate-100 font-mono focus:outline-none focus:ring-2 resize-y"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeEditModal()" class="bg-dark-800 hover:bg-dark-700 text-slate-300 text-xs px-4 py-2.5 rounded-xl font-semibold transition">Cancel</button>
+                <button onclick="saveEditedEntry()" id="modal-edit-save-btn" class="text-white text-xs px-5 py-2.5 rounded-xl font-semibold transition shadow-lg" style="background-color: var(--theme-color)">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Discord Colored Text Generator Iframe -->
+    <div id="discord-modal" class="fixed inset-0 bg-dark-950/85 backdrop-blur-md z-50 flex flex-col p-4 sm:p-8 hidden">
+        <div class="bg-dark-900 border border-dark-800 rounded-3xl w-full max-w-6xl mx-auto h-full flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 border-b border-dark-800 flex items-center justify-between bg-dark-900">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600/20 text-indigo-400 p-2.5 rounded-xl"><i class="fa-brands fa-discord text-base"></i></div>
+                    <div>
+                        <h3 class="font-bold text-white text-sm sm:text-base">Discord Colored Text Generator</h3>
+                        <p class="text-[11px] text-slate-400">Generate colored text codes and paste them directly into your vault tabs.</p>
+                    </div>
+                </div>
+                <button onclick="closeDiscordModal()" class="text-slate-400 hover:text-white transition w-9 h-9 rounded-full bg-dark-800 flex items-center justify-center hover:bg-rose-500/20 hover:text-rose-400">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <!-- Iframe Container -->
+            <div class="flex-1 w-full bg-dark-950">
+                <iframe src="https://rebane2001.com/discord-colored-text-generator/" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-6 right-6 text-white text-xs px-4 py-3 rounded-2xl shadow-2xl opacity-0 translate-y-3 pointer-events-none transition-all duration-300 z-50 flex items-center gap-2.5 font-semibold" style="background-color: var(--theme-color)">
         <i class="fa-solid fa-circle-check text-sm"></i> <span id="toast-msg">Copied to clipboard!</span>
@@ -138,7 +196,7 @@
 
     <!-- Supabase & App Script Logic -->
     <script>
-        // --- REPLACE THESE WITH YOUR SUPABASE DETAILS ---
+        // --- YOUR SUPABASE CREDENTIALS ---
         const SUPABASE_URL = 'https://yrihwijpytawpxvcfxvb.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyaWh3aWpweXRhd3B4dmNmeHZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NzI3NzUsImV4cCI6MjEwNzE0ODc3NX0.bCoFGFmhCtz53q6u7BIOLhBYeH1Km28wKS_B7IYjKLM';
         
@@ -230,16 +288,43 @@
             return neonColors[cIdx % neonColors.length];
         }
 
+        function isCmdTab(tab) {
+            return tab.isCmd || tab.name.toLowerCase().includes('cmd');
+        }
+
         function applyTheme() {
-            const color = getActiveColor();
-            document.documentElement.style.setProperty('--theme-color', color.hex);
-            document.documentElement.style.setProperty('--theme-rgb', color.rgb);
+            const activeTab = db.tabs.find(t => t.id === db.activeTabId) || db.tabs[0];
+            const isCmd = isCmdTab(activeTab);
 
-            const sidebarBtn = document.getElementById('sidebar-add-btn');
-            if (sidebarBtn) sidebarBtn.style.backgroundColor = color.hex;
+            if (isCmd) {
+                // Style for CMD Terminal Mode
+                document.getElementById('body-root').style.backgroundColor = '#000000';
+                document.getElementById('input-box-wrapper').style.backgroundColor = '#0a0a0a';
+                document.getElementById('input-box-wrapper').style.borderColor = '#3f3f46';
+                document.getElementById('live-input').style.color = '#facc15';
+                document.getElementById('current-tab-title').style.color = '#facc15';
+                document.getElementById('sub-helper-text').innerHTML = 'CMD Terminal Active — Type command and press <span class="font-semibold text-yellow-400">Enter</span>';
+            } else {
+                // Normal Dynamic Theme Mode
+                const color = getActiveColor();
+                document.documentElement.style.setProperty('--theme-color', color.hex);
+                document.documentElement.style.setProperty('--theme-rgb', color.rgb);
+                document.getElementById('body-root').style.backgroundColor = '';
+                document.getElementById('input-box-wrapper').style.backgroundColor = '';
+                document.getElementById('input-box-wrapper').style.borderColor = '';
+                document.getElementById('live-input').style.color = '';
+                document.getElementById('current-tab-title').style.color = '#ffffff';
+                document.getElementById('sub-helper-text').innerHTML = 'Type text and press <span id="enter-highlight" class="font-semibold" style="color: var(--theme-color)">Enter</span> to save to cloud';
 
-            const modalBtn = document.getElementById('modal-create-btn');
-            if (modalBtn) modalBtn.style.backgroundColor = color.hex;
+                const sidebarBtn = document.getElementById('sidebar-add-btn');
+                if (sidebarBtn) sidebarBtn.style.backgroundColor = color.hex;
+
+                const modalBtn = document.getElementById('modal-create-btn');
+                if (modalBtn) modalBtn.style.backgroundColor = color.hex;
+
+                const editSaveBtn = document.getElementById('modal-edit-save-btn');
+                if (editSaveBtn) editSaveBtn.style.backgroundColor = color.hex;
+            }
         }
 
         function renderTabs() {
@@ -248,27 +333,40 @@
 
             db.tabs.forEach(tab => {
                 const isActive = tab.id === db.activeTabId;
+                const isCmd = isCmdTab(tab);
                 const tabColor = neonColors[(tab.colorIndex !== undefined ? tab.colorIndex : 0) % neonColors.length];
                 
                 const tabEl = document.createElement('div');
                 tabEl.className = `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer select-none group`;
                 
                 if (isActive) {
-                    tabEl.style.backgroundColor = tabColor.hex;
-                    tabEl.style.color = '#ffffff';
-                    tabEl.style.boxShadow = `0 10px 20px -5px rgba(${tabColor.rgb}, 0.4)`;
+                    if (isCmd) {
+                        tabEl.style.backgroundColor = '#18181b';
+                        tabEl.style.color = '#facc15';
+                        tabEl.style.border = '1px solid #facc15';
+                        tabEl.style.boxShadow = `0 0 15px rgba(250, 204, 21, 0.2)`;
+                    } else {
+                        tabEl.style.backgroundColor = tabColor.hex;
+                        tabEl.style.color = '#ffffff';
+                        tabEl.style.boxShadow = `0 10px 20px -5px rgba(${tabColor.rgb}, 0.4)`;
+                    }
                 } else {
-                    tabEl.className += ` text-slate-400 hover:bg-dark-800 hover:text-slate-200`;
+                    if (isCmd) {
+                        tabEl.className += ` text-yellow-500/80 hover:bg-dark-800 hover:text-yellow-400 border border-yellow-500/20`;
+                    } else {
+                        tabEl.className += ` text-slate-400 hover:bg-dark-800 hover:text-slate-200`;
+                    }
                 }
                 
                 tabEl.innerHTML = `
-                    <span class="truncate flex-1" onclick="switchTab('${tab.id}')">${escapeHtml(tab.name)}</span>
+                    <span class="truncate flex-1 font-mono" onclick="switchTab('${tab.id}')">${isCmd ? '&gt; ' : ''}${escapeHtml(tab.name)}</span>
                     ${db.tabs.length > 1 ? `<button onclick="event.stopPropagation(); deleteTab('\${tab.id}')" class="w-5 h-5 rounded-lg flex items-center justify-center opacity-50 group-hover:opacity-100 hover:bg-black/30 transition ml-2"><i class="fa-solid fa-xmark text-[10px]"></i></button>` : ''}
                 `;
                 container.appendChild(tabEl);
             });
 
             const activeTab = db.tabs.find(t => t.id === db.activeTabId) || db.tabs[0];
+            document.getElementById('current-tab-title5'] = activeTab.name;
             document.getElementById('current-tab-title').textContent = activeTab.name;
             applyTheme();
         }
@@ -277,15 +375,17 @@
             const container = document.getElementById('entries-container');
             container.innerHTML = '';
 
+            const activeTab = db.tabs.find(t => t.id === db.activeTabId) || db.tabs[0];
+            const isCmd = isCmdTab(activeTab);
             const currentEntries = db.entries[db.activeTabId] || [];
             const color = getActiveColor();
 
             if (currentEntries.length === 0) {
                 container.innerHTML = `
-                    <div class="border border-dashed border-dark-800 rounded-2xl p-12 text-center text-slate-500 text-xs bg-dark-900/30">
-                        <i class="fa-regular fa-note-sticky text-3xl mb-3 opacity-40" style="color: ${color.hex}"></i>
-                        <p class="font-medium text-slate-400">No text entries in this tab yet.</p>
-                        <p class="text-[11px] text-slate-600 mt-1">Type in the box above and press Enter to commit your first block.</p>
+                    <div class="border border-dashed ${isCmd ? 'border-yellow-500/30 bg-black/40 text-yellow-500/60' : 'border-dark-800 bg-dark-900/30 text-slate-500'} rounded-2xl p-12 text-center text-xs">
+                        <i class="fa-regular fa-note-sticky text-3xl mb-3 opacity-40" style="color: ${isCmd ? '#facc15' : color.hex}"></i>
+                        <p class="font-medium">No entries in this tab yet.</p>
+                        <p class="text-[11px] mt-1">Type in the box above and press Enter to commit.</p>
                     </div>
                 `;
                 return;
@@ -293,13 +393,16 @@
 
             [...currentEntries].reverse().forEach(entry => {
                 const card = document.createElement('div');
-                card.className = 'bg-dark-900 border border-dark-800 hover:border-dark-700 rounded-2xl p-4.5 shadow-xl flex flex-col gap-3 transition group';
+                card.className = `${isCmd ? 'bg-black border-yellow-500/30 hover:border-yellow-500/60' : 'bg-dark-900 border-dark-800 hover:border-dark-700'} border rounded-2xl p-4.5 shadow-xl flex flex-col gap-3 transition group`;
                 
                 card.innerHTML = `
-                    <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-dark-800 pb-2.5">
-                        <span class="flex items-center gap-1.5 font-mono"><i class="fa-regular fa-clock" style="color: ${color.hex}"></i>${entry.timestamp}</span>
+                    <div class="flex items-center justify-between text-[11px] ${isCmd ? 'text-yellow-500/70 border-yellow-500/20' : 'text-slate-400 border-dark-800'} border-b pb-2.5">
+                        <span class="flex items-center gap-1.5 font-mono"><i class="fa-regular fa-clock" style="color: ${isCmd ? '#facc15' : color.hex}"></i>${entry.timestamp}</span>
                         <div class="flex items-center gap-2">
-                            <button onclick="copyText('${encodeURIComponent(entry.text)}')" class="bg-dark-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 font-semibold text-xs border border-dark-700 shadow-sm" onmouseover="this.style.backgroundColor='${color.hex}'" onmouseout="this.style.backgroundColor=''">
+                            <button onclick="openEditModal('${entry.id}')" class="${isCmd ? 'bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black border-yellow-500/30' : 'bg-dark-800 text-slate-300 hover:text-white border-dark-700'} px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 font-semibold text-xs border shadow-sm">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </button>
+                            <button onclick="copyText('${encodeURIComponent(entry.text)}')" class="${isCmd ? 'bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500 hover:text-black border-yellow-500/30' : 'bg-dark-800 text-slate-300 hover:text-white border-dark-700'} px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 font-semibold text-xs border shadow-sm">
                                 <i class="fa-regular fa-copy"></i> Copy
                             </button>
                             <button onclick="deleteEntry('${entry.id}')" class="bg-dark-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 px-2.5 py-1.5 rounded-xl transition border border-dark-700 hover:border-rose-500/40">
@@ -307,7 +410,7 @@
                             </button>
                         </div>
                     </div>
-                    <pre class="bg-dark-950 p-4 rounded-xl text-xs font-mono text-slate-200 overflow-x-auto whitespace-pre-wrap break-all border border-dark-800/80 shadow-inner">${escapeHtml(entry.text)}</pre>
+                    <pre class="${isCmd ? 'bg-black text-yellow-400 border-yellow-500/20' : 'bg-dark-950 text-slate-200 border-dark-800/80'} p-4 rounded-xl text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all border shadow-inner">${escapeHtml(entry.text)}</pre>
                 `;
                 container.appendChild(card);
             });
@@ -331,6 +434,45 @@
             document.getElementById('tab-modal').classList.add('hidden');
         }
 
+        function openDiscordModal() {
+            document.getElementById('discord-modal').classList.remove('hidden');
+        }
+
+        function closeDiscordModal() {
+            document.getElementById('discord-modal').classList.add('hidden');
+        }
+
+        function openEditModal(entryId) {
+            const entries = db.entries[db.activeTabId] || [];
+            const entry = entries.find(e => e.id === entryId);
+            if (!entry) return;
+
+            document.getElementById('edit-entry-id').value = entry.id;
+            document.getElementById('edit-entry-textarea').value = entry.text;
+            document.getElementById('edit-modal').classList.remove('hidden');
+            document.getElementById('edit-entry-textarea').focus();
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        async function saveEditedEntry() {
+            const entryId = document.getElementById('edit-entry-id').value;
+            const newText = document.getElementById('edit-entry-textarea').value.trim();
+            if (!newText) return;
+
+            const entries = db.entries[db.activeTabId] || [];
+            const entry = entries.find(e => e.id === entryId);
+            if (entry) {
+                entry.text = newText;
+                entry.timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' (edited)';
+                await saveState();
+                closeEditModal();
+                renderEntries();
+            }
+        }
+
         async function createTab() {
             const nameInput = document.getElementById('new-tab-name');
             const name = nameInput.value.trim();
@@ -339,12 +481,26 @@
             const randomColorIndex = Math.floor(Math.random() * neonColors.length);
 
             const newId = 'tab_' + Date.now();
-            db.tabs.push({ id: newId, name: name, colorIndex: randomColorIndex });
+            db.tabs.push({ id: newId, name: name, colorIndex: randomColorIndex, isCmd: false });
             db.entries[newId] = [];
             db.activeTabId = newId;
 
             await saveState();
             closeNewTabModal();
+            renderTabs();
+            renderEntries();
+        }
+
+        async function createCmdTab() {
+            const newId = 'tab_' + Date.now();
+            const cmdName = 'cmd-terminal';
+            db.tabs.push({ id: newId, name: cmdName, isCmd: true });
+            db.entries[newId] = [
+                { id: 'e_' + Date.now(), text: 'Microsoft Windows [Version 10.0.19045.3803]\n(c) Microsoft Corporation. All rights reserved.\n\nC:\\ADMIN_KUNGKANG\\Vault>', timestamp: new Date().toLocaleTimeString() }
+            ];
+            db.activeTabId = newId;
+
+            await saveState();
             renderTabs();
             renderEntries();
         }
