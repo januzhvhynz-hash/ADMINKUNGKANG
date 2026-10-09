@@ -6,7 +6,7 @@
     <title>ADMIN KUNGKANG - Supabase Secure Vault</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- CryptoJS for secure client-side encryption -->
+    <!-- CryptoJS for secure client-side encryption & SHA256 hashing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <!-- Supabase JS Client via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -30,45 +30,40 @@
         ::-webkit-scrollbar-track { background: #030712; }
         ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #374151; }
-
-        /* Floating window resizer style */
-        .window-resizer {
-            width: 14px;
-            height: 14px;
-            position: absolute;
-            right: 2px;
-            bottom: 2px;
-            cursor: nwse-resize;
-            background: linear-gradient(135deg, transparent 50%, #4b5563 50%);
-            border-bottom-right-radius: 12px;
-        }
     </style>
 </head>
 <body id="body-root" class="bg-dark-950 text-slate-100 min-h-screen flex flex-col md:flex-row selection:bg-indigo-500 selection:text-white relative">
 
-    <!-- Password Lock Screen Overlay -->
+    <!-- Password Lock Screen Overlay (Create or Connect) -->
     <div id="auth-overlay" class="fixed inset-0 bg-dark-950 z-50 flex items-center justify-center p-4">
         <div class="bg-dark-900 border border-dark-800 rounded-3xl w-full max-w-md p-8 shadow-2xl flex flex-col gap-6 text-center">
             <div class="flex flex-col items-center gap-3">
                 <div class="bg-indigo-600/20 text-indigo-400 p-4 rounded-2xl text-xl">
-                    <i class="fa-solid fa-cloud-lock"></i>
+                    <i class="fa-solid fa-key"></i>
                 </div>
-                <h2 id="auth-title" class="font-bold text-white text-xl">KUNKANG PROTECTEDTEXT</h2>
-                <p id="auth-desc" class="text-xs text-slate-400">REMIX BY MASTERKONAMS</p>
+                <h2 id="auth-title" class="font-bold text-white text-xl">Cloud Vault Key Access</h2>
+                <p id="auth-desc" class="text-xs text-slate-400">Enter your vault password token to fetch and decrypt your personal scripts anywhere.</p>
             </div>
+
+            <!-- Mode Selector -->
+            <div class="flex bg-dark-950 p-1 rounded-xl border border-dark-800 text-xs font-semibold">
+                <button id="mode-existing-btn" onclick="switchAuthMode('existing')" class="flex-1 py-2 rounded-lg bg-indigo-600 text-white transition">Existing Token</button>
+                <button id="mode-new-btn" onclick="switchAuthMode('new')" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition">Create New Token</button>
+            </div>
+
             <div class="flex flex-col gap-3">
-                <input type="password" id="auth-password" placeholder="TYPE YO PASSWORD NIGGA" 
+                <input type="password" id="auth-password" placeholder="Enter master password token..." 
                     class="w-full bg-dark-950 border border-dark-800 rounded-xl px-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-center font-mono">
-                <button onclick="handleAuthentication()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-3.5 rounded-xl font-semibold transition shadow-lg shadow-indigo-600/30">
-                    PASOK!
+                <button id="auth-submit-btn" onclick="handleAuthentication()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-3.5 rounded-xl font-semibold transition shadow-lg shadow-indigo-600/30">
+                    Connect & Decrypt Vault
                 </button>
             </div>
-            <p id="auth-error" class="text-xs text-rose-400 font-medium hidden">Incorrect password or unable to connect!</p>
+            <p id="auth-error" class="text-xs text-rose-400 font-medium hidden">Token not found or incorrect password decryption!</p>
         </div>
     </div>
 
     <!-- Left Sidebar Panel for Tabs -->
-    <aside class="w-full md:w-72 bg-dark-900 border-r border-dark-800 flex flex-col justify-between shrink-0 select-none min-h-screen">
+    <aside class="w-full md:w-72 bg-dark-900 border-r border-dark-800 flex flex-col justify-between shrink-0 select-none">
         <div>
             <div class="p-5 border-b border-dark-800 flex items-center justify-between">
                 <div>
@@ -87,12 +82,12 @@
                     <div id="tabs-container" class="flex flex-col gap-1.5 max-h-[calc(100vh-320px)] overflow-y-auto"></div>
                 </div>
 
-                <!-- Static Tool Toggle Buttons -->
+                <!-- Tool Toggle Buttons -->
                 <div class="pt-2 border-t border-dark-800 flex flex-col gap-2">
-                    <button onclick="toggleDiscordFloatingWindow()" id="discord-tool-btn" class="w-full bg-dark-800 hover:bg-dark-700 text-indigo-400 text-xs py-2.5 px-3 rounded-xl font-semibold transition flex items-center gap-2.5 border border-dark-700">
+                    <button onclick="toggleDiscordFloatingModal()" class="w-full bg-dark-800 hover:bg-dark-700 text-indigo-400 text-xs py-2.5 px-3 rounded-xl font-semibold transition flex items-center gap-2.5 border border-dark-700">
                         <i class="fa-brands fa-discord text-sm"></i> Discord Color Tool
                     </button>
-                    <button id="cmd-tool-btn" onclick="openCmdTerminalView()" class="w-full bg-black/40 hover:bg-black/60 text-yellow-400 text-xs py-2.5 px-3 rounded-xl font-semibold transition flex items-center gap-2.5 border border-yellow-500/30 font-mono">
+                    <button onclick="openCmdTerminalView()" class="w-full bg-black/40 hover:bg-black/60 text-yellow-400 text-xs py-2.5 px-3 rounded-xl font-semibold transition flex items-center gap-2.5 border border-yellow-500/30 font-mono">
                         <i class="fa-solid fa-terminal text-sm text-yellow-400"></i> &gt; CMD Terminal
                     </button>
                 </div>
@@ -121,7 +116,7 @@
             </div>
         </div>
 
-        <!-- Live Input Box -->
+        <!-- Live Input Box (Normal Tabs) -->
         <div id="input-box-wrapper" class="bg-dark-900 border border-dark-800 rounded-2xl p-4 sm:p-5 shadow-2xl transition">
             <div class="flex items-center justify-between pb-3 mb-3 border-b border-dark-800 text-xs text-slate-400">
                 <span id="live-stream-label" class="flex items-center gap-2 font-semibold" style="color: var(--theme-color)">
@@ -133,44 +128,33 @@
                 class="w-full bg-transparent text-slate-100 placeholder-slate-600 text-sm focus:outline-none resize-none font-mono"></textarea>
         </div>
 
-        <!-- Entries Container -->
+        <!-- Entries Container (Normal Tabs) -->
         <div id="entries-container" class="flex flex-col gap-4 pb-16"></div>
 
-        <!-- Full Page Hacker Typer Frame (CMD Mode) -->
+        <!-- Full Page Hacker Typer Frame (CMD Mode View) -->
         <div id="hacker-frame-container" class="hidden flex-1 w-full min-h-[calc(100vh-64px)] bg-black border border-yellow-500/30 rounded-2xl overflow-hidden shadow-2xl">
             <iframe src="https://hackertyper.net/#" class="w-full h-full border-0"></iframe>
         </div>
     </main>
 
-    <!-- Floating Draggable & Resizable Window: Discord Color Tool -->
-    <div id="discord-floating-window" class="fixed hidden z-40 bg-dark-900 border border-indigo-500/40 rounded-2xl shadow-2xl flex flex-col overflow-hidden min-w-[320px] min-h-[250px]" style="top: 80px; right: 40px; width: 620px; height: 500px;">
-        <!-- Header / Drag Handle Bar -->
-        <div id="discord-window-header" class="bg-dark-850 px-4 py-2.5 border-b border-dark-800 flex items-center justify-between cursor-move select-none">
-            <div class="flex items-center gap-2.5 pointer-events-none">
+    <!-- Floating, Draggable & Resizable Discord Color Tool Window -->
+    <div id="discord-floating-window" class="fixed top-12 right-12 z-40 w-full sm:w-[500px] h-[550px] bg-dark-900/95 border border-dark-700 rounded-2xl shadow-2xl flex flex-col hidden backdrop-blur-md overflow-hidden min-w-[320px] min-h-[250px] resize">
+        <!-- Floating Window Title Header (Draggable Handle) -->
+        <div id="discord-window-header" class="p-3 bg-dark-950 border-b border-dark-800 flex items-center justify-between cursor-move select-none">
+            <div class="flex items-center gap-2.5">
                 <i class="fa-brands fa-discord text-indigo-400 text-sm"></i>
-                <span class="text-xs font-bold text-white tracking-wide">Discord Color Tool</span>
-                <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md font-mono">rebane2001.com</span>
+                <span class="text-xs font-bold text-white tracking-wide">Discord Color Generator</span>
             </div>
-            <div class="flex items-center gap-1.5">
-                <button onclick="toggleMinimizeDiscordWindow()" title="Minimize" class="w-6 h-6 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-400 hover:text-white flex items-center justify-center text-[10px] transition">
-                    <i class="fa-solid fa-minus"></i>
-                </button>
-                <button onclick="toggleMaximizeDiscordWindow()" title="Maximize / Restore" class="w-6 h-6 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-400 hover:text-white flex items-center justify-center text-[10px] transition">
-                    <i class="fa-regular fa-square"></i>
-                </button>
-                <button onclick="closeDiscordFloatingWindow()" title="Close" class="w-6 h-6 rounded-lg bg-dark-800 hover:bg-rose-500/80 text-slate-400 hover:text-white flex items-center justify-center text-[10px] transition">
-                    <i class="fa-solid fa-xmark"></i>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleDiscordFloatingModal()" class="w-6 h-6 rounded-lg bg-dark-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-xs"></i>
                 </button>
             </div>
         </div>
-        
-        <!-- Iframe Body -->
-        <div id="discord-window-body" class="flex-1 w-full h-full bg-dark-950 relative">
+        <!-- Embedded Tool Iframe -->
+        <div class="flex-1 w-full bg-dark-950">
             <iframe src="https://rebane2001.com/discord-colored-text-generator/" class="w-full h-full border-0"></iframe>
         </div>
-
-        <!-- Corner Resizer Handle -->
-        <div id="discord-window-resizer" class="window-resizer"></div>
     </div>
 
     <!-- Modal: Add New Tab -->
@@ -242,14 +226,16 @@
         ];
 
         let masterPassword = '';
+        let vaultToken = '';
+        let authMode = 'existing';
+        let isCmdMode = false;
         let db = null;
-        let isCmdModeActive = false;
 
         const defaultDb = {
             activeTabId: 'tab_1',
             tabs: [{ id: 'tab_1', name: 'Main Scripts', colorIndex: 0 }],
             entries: {
-                'tab_1': [{ id: 'e_1', text: 'print("Supabase cloud sync active!")', timestamp: new Date().toLocaleTimeString() }]
+                'tab_1': [{ id: 'e_1', text: 'print("Supabase multi-token vault active!")', timestamp: new Date().toLocaleTimeString() }]
             }
         };
 
@@ -257,38 +243,59 @@
             if (e.key === 'Enter') handleAuthentication();
         });
 
+        function switchAuthMode(mode) {
+            authMode = mode;
+            const existingBtn = document.getElementById('mode-existing-btn');
+            const newBtn = document.getElementById('mode-new-btn');
+            const submitBtn = document.getElementById('auth-submit-btn');
+
+            if (mode === 'existing') {
+                existingBtn.className = 'flex-1 py-2 rounded-lg bg-indigo-600 text-white transition';
+                newBtn.className = 'flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition';
+                submitBtn.textContent = 'Connect & Decrypt Vault';
+            } else {
+                newBtn.className = 'flex-1 py-2 rounded-lg bg-indigo-600 text-white transition';
+                existingBtn.className = 'flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition';
+                submitBtn.textContent = 'Create New Vault Token';
+            }
+            document.getElementById('auth-error').classList.add('hidden');
+        }
+
         async function handleAuthentication() {
-            const passInput = document.getElementById('auth-password').value;
+            const passInput = document.getElementById('auth-password').value.trim();
             if (!passInput) return;
+            
             masterPassword = passInput;
+            vaultToken = CryptoJS.SHA256(masterPassword).toString();
 
             try {
                 let { data, error } = await _supabase
                     .from('vault_data')
                     .select('encrypted_data')
-                    .eq('id', 1)
-                    .single();
+                    .eq('vault_token', vaultToken)
+                    .maybeSingle();
 
-                if (error || !data) {
+                if (authMode === 'new') {
+                    if (data) {
+                        alert('This password token already exists! Switch to "Existing Token" to log in.');
+                        return;
+                    }
                     db = defaultDb;
                     await saveState();
                     unlockApp();
                 } else {
+                    if (error || !data) {
+                        throw new Error('Token not found');
+                    }
                     const bytes = CryptoJS.AES.decrypt(data.encrypted_data, masterPassword);
                     const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-                    if (!decryptedString) throw new Error('Invalid password');
+                    if (!decryptedString) throw new Error('Invalid decryption key');
 
                     db = JSON.parse(decryptedString);
-                    db.tabs = db.tabs.filter(t => !t.isCmd && !t.name.toLowerCase().includes('cmd'));
-                    if (db.tabs.length === 0) {
-                        db.tabs.push({ id: 'tab_1', name: 'Main Scripts', colorIndex: 0 });
-                        db.activeTabId = 'tab_1';
-                    }
                     unlockApp();
                 }
             } catch (err) {
                 document.getElementById('auth-error').classList.remove('hidden');
-                document.getElementById('auth-password').value = '';
             }
         }
 
@@ -296,13 +303,12 @@
             document.getElementById('auth-overlay').classList.add('hidden');
             renderTabs();
             renderEntries();
-            setupDraggableResizableWindow();
         }
 
         function lockVault() {
             masterPassword = '';
+            vaultToken = '';
             db = null;
-            isCmdModeActive = false;
             document.getElementById('auth-password').value = '';
             document.getElementById('auth-error').classList.add('hidden');
             document.getElementById('auth-overlay').classList.remove('hidden');
@@ -310,43 +316,33 @@
         }
 
         async function saveState() {
-            if (!db || !masterPassword) return;
-            const cleanDb = {
-                ...db,
-                tabs: db.tabs.filter(t => !t.isCmd)
-            };
-            const encryptedString = CryptoJS.AES.encrypt(JSON.stringify(cleanDb), masterPassword).toString();
+            if (!db || !masterPassword || !vaultToken) return;
+            const encryptedString = CryptoJS.AES.encrypt(JSON.stringify(db), masterPassword).toString();
             
             await _supabase
                 .from('vault_data')
-                .upsert({ id: 1, encrypted_data: encryptedString });
+                .upsert({ vault_token: vaultToken, encrypted_data: encryptedString });
         }
 
         function getActiveColor() {
             const activeTab = db.tabs.find(t => t.id === db.activeTabId) || db.tabs[0];
-            const cIdx = activeTab ? (activeTab.colorIndex !== undefined ? activeTab.colorIndex : 0) : 0;
+            const cIdx = activeTab.colorIndex !== undefined ? activeTab.colorIndex : 0;
             return neonColors[cIdx % neonColors.length];
         }
 
         function openCmdTerminalView() {
-            isCmdModeActive = true;
-            applyTheme();
+            isCmdMode = true;
             renderTabs();
+            applyTheme();
         }
 
         function applyTheme() {
-            const cmdBtn = document.getElementById('cmd-tool-btn');
-
-            if (isCmdModeActive) {
+            if (isCmdMode) {
                 document.getElementById('body-root').style.backgroundColor = '#000000';
                 document.getElementById('main-header').classList.add('hidden');
                 document.getElementById('input-box-wrapper').classList.add('hidden');
                 document.getElementById('entries-container').classList.add('hidden');
                 document.getElementById('hacker-frame-container').classList.remove('hidden');
-
-                if (cmdBtn) {
-                    cmdBtn.className = "w-full bg-yellow-500/20 text-yellow-300 text-xs py-2.5 px-3 rounded-xl font-semibold transition flex items-center gap-2.5 border border-yellow-400/80 font-mono shadow-md shadow-yellow-500/20";
-                }
             } else {
                 const color = getActiveColor();
                 document.documentElement.style.setProperty('--theme-color', color.hex);
@@ -360,10 +356,6 @@
 
                 document.getElementById('current-tab-title').style.color = '#ffffff';
                 document.getElementById('sub-helper-text').innerHTML = 'Type text and press <span id="enter-highlight" class="font-semibold" style="color: var(--theme-color)">Enter</span> to save to cloud';
-
-                if (cmdBtn) {
-                    cmdBtn.className = "w-full bg-black/40 hover:bg-black/60 text-yellow-400 text-xs py-2.5 px-3 rounded-xl font-semibold transition flex items-center gap-2.5 border border-yellow-500/30 font-mono";
-                }
 
                 const sidebarBtn = document.getElementById('sidebar-add-btn');
                 if (sidebarBtn) sidebarBtn.style.backgroundColor = color.hex;
@@ -380,10 +372,8 @@
             const container = document.getElementById('tabs-container');
             container.innerHTML = '';
 
-            const userTabs = db.tabs.filter(t => !t.isCmd);
-
-            userTabs.forEach(tab => {
-                const isActive = !isCmdModeActive && tab.id === db.activeTabId;
+            db.tabs.forEach(tab => {
+                const isActive = !isCmdMode && tab.id === db.activeTabId;
                 const tabColor = neonColors[(tab.colorIndex !== undefined ? tab.colorIndex : 0) % neonColors.length];
                 
                 const tabEl = document.createElement('div');
@@ -398,16 +388,14 @@
                 }
                 
                 tabEl.innerHTML = `
-                    <span class="truncate flex-1 font-mono" onclick="switchTab('${tab.id}')">${escapeHtml(tab.name)}</span>
-                    ${userTabs.length > 1 ? `<button onclick="event.stopPropagation(); deleteTab('${tab.id}')" class="w-5 h-5 rounded-lg flex items-center justify-center opacity-50 group-hover:opacity-100 hover:bg-black/30 transition ml-2"><i class="fa-solid fa-xmark text-[10px]"></i></button>` : ''}
+                    <span class="truncate flex-1" onclick="switchTab('${tab.id}')">${escapeHtml(tab.name)}</span>
+                    ${db.tabs.length > 1 ? `<button onclick="event.stopPropagation(); deleteTab('\${tab.id}')" class="w-5 h-5 rounded-lg flex items-center justify-center opacity-50 group-hover:opacity-100 hover:bg-black/30 transition ml-2"><i class="fa-solid fa-xmark text-[10px]"></i></button>` : ''}
                 `;
                 container.appendChild(tabEl);
             });
 
-            const activeTab = userTabs.find(t => t.id === db.activeTabId) || userTabs[0];
-            if (activeTab) {
-                document.getElementById('current-tab-title').textContent = activeTab.name;
-            }
+            const activeTab = db.tabs.find(t => t.id === db.activeTabId) || db.tabs[0];
+            document.getElementById('current-tab-title').textContent = activeTab.name;
             applyTheme();
         }
 
@@ -415,7 +403,7 @@
             const container = document.getElementById('entries-container');
             container.innerHTML = '';
 
-            if (isCmdModeActive) return;
+            if (isCmdMode) return;
 
             const currentEntries = db.entries[db.activeTabId] || [];
             const color = getActiveColor();
@@ -457,7 +445,7 @@
         }
 
         async function switchTab(id) {
-            isCmdModeActive = false;
+            isCmdMode = false;
             db.activeTabId = id;
             if (!db.entries[id]) db.entries[id] = [];
             await saveState();
@@ -475,130 +463,9 @@
             document.getElementById('tab-modal').classList.add('hidden');
         }
 
-        // --- FLOATING WINDOW LOGIC (DISCORD TOOL) ---
-        function toggleDiscordFloatingWindow() {
+        function toggleDiscordFloatingModal() {
             const win = document.getElementById('discord-floating-window');
-            if (win.classList.contains('hidden')) {
-                win.classList.remove('hidden');
-            } else {
-                win.classList.add('hidden');
-            }
-        }
-
-        function closeDiscordFloatingWindow() {
-            document.getElementById('discord-floating-window').classList.add('hidden');
-        }
-
-        let isMinimized = false;
-        let preMinHeight = '500px';
-
-        function toggleMinimizeDiscordWindow() {
-            const win = document.getElementById('discord-floating-window');
-            const body = document.getElementById('discord-window-body');
-            const resizer = document.getElementById('discord-window-resizer');
-
-            if (!isMinimized) {
-                preMinHeight = win.style.height;
-                body.classList.add('hidden');
-                resizer.classList.add('hidden');
-                win.style.height = 'auto';
-                isMinimized = true;
-            } else {
-                body.classList.remove('hidden');
-                resizer.classList.remove('hidden');
-                win.style.height = preMinHeight;
-                isMinimized = false;
-            }
-        }
-
-        let isMaximized = false;
-        let preMaxState = {};
-
-        function toggleMaximizeDiscordWindow() {
-            const win = document.getElementById('discord-floating-window');
-            const body = document.getElementById('discord-window-body');
-
-            if (isMinimized) toggleMinimizeDiscordWindow();
-
-            if (!isMaximized) {
-                preMaxState = {
-                    top: win.style.top,
-                    left: win.style.left,
-                    right: win.style.right,
-                    width: win.style.width,
-                    height: win.style.height
-                };
-                win.style.top = '10px';
-                win.style.left = '10px';
-                win.style.right = 'auto';
-                win.style.width = 'calc(100vw - 20px)';
-                win.style.height = 'calc(100vh - 20px)';
-                isMaximized = true;
-            } else {
-                win.style.top = preMaxState.top;
-                win.style.left = preMaxState.left;
-                win.style.right = preMaxState.right;
-                win.style.width = preMaxState.width;
-                win.style.height = preMaxState.height;
-                isMaximized = false;
-            }
-        }
-
-        function setupDraggableResizableWindow() {
-            const win = document.getElementById('discord-floating-window');
-            const header = document.getElementById('discord-window-header');
-            const resizer = document.getElementById('discord-window-resizer');
-
-            let isDragging = false;
-            let dragStartX = 0, dragStartY = 0;
-            let winStartX = 0, winStartY = 0;
-
-            header.addEventListener('mousedown', (e) => {
-                if (e.target.closest('button')) return; // Ignore buttons
-                isDragging = true;
-                dragStartX = e.clientX;
-                dragStartY = e.clientY;
-                const rect = win.getBoundingClientRect();
-                winStartX = rect.left;
-                winStartY = rect.top;
-                win.style.right = 'auto'; // Clear right positioning to avoid constraint conflicts
-                win.style.left = `${winStartX}px`;
-                win.style.top = `${winStartY}px`;
-            });
-
-            let isResizing = false;
-            let resizeStartX = 0, resizeStartY = 0;
-            let winStartW = 0, winStartH = 0;
-
-            resizer.addEventListener('mousedown', (e) => {
-                isResizing = true;
-                resizeStartX = e.clientX;
-                resizeStartY = e.clientY;
-                winStartW = win.offsetWidth;
-                winStartH = win.offsetHeight;
-                e.preventDefault();
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (isDragging) {
-                    const dx = e.clientX - dragStartX;
-                    const dy = e.clientY - dragStartY;
-                    win.style.left = `${Math.max(0, winStartX + dx)}px`;
-                    win.style.top = `${Math.max(0, winStartY + dy)}px`;
-                }
-
-                if (isResizing) {
-                    const dw = e.clientX - resizeStartX;
-                    const dh = e.clientY - resizeStartY;
-                    win.style.width = `${Math.max(320, winStartW + dw)}px`;
-                    win.style.height = `${Math.max(250, winStartH + dh)}px`;
-                }
-            });
-
-            document.addEventListener('mouseup', () => {
-                isDragging = false;
-                isResizing = false;
-            });
+            win.classList.toggle('hidden');
         }
 
         function openEditModal(entryId) {
@@ -640,10 +507,10 @@
             const randomColorIndex = Math.floor(Math.random() * neonColors.length);
 
             const newId = 'tab_' + Date.now();
-            db.tabs.push({ id: newId, name: name, colorIndex: randomColorIndex, isCmd: false });
+            db.tabs.push({ id: newId, name: name, colorIndex: randomColorIndex });
             db.entries[newId] = [];
             db.activeTabId = newId;
-            isCmdModeActive = false;
+            isCmdMode = false;
 
             await saveState();
             closeNewTabModal();
@@ -723,6 +590,26 @@
         function escapeHtml(str) {
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
+
+        // --- Draggable Floating Window Logic ---
+        const floatingWin = document.getElementById('discord-floating-window');
+        const winHeader = document.getElementById('discord-window-header');
+        let isDragging = false, offsetPos = [0, 0];
+
+        winHeader.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            offsetPos = [floatingWin.offsetLeft - e.clientX, floatingWin.offsetTop - e.clientY];
+        });
+
+        document.addEventListener('mouseup', function() { isDragging = false; });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            floatingWin.style.left = (e.clientX + offsetPos[0]) + 'px';
+            floatingWin.style.top = (e.clientY + offsetPos[1]) + 'px';
+            floatingWin.style.right = 'auto';
+        });
     </script>
 </body>
 </html>
