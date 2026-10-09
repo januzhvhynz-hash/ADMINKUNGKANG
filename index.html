@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADMIN KUNGKANG - Secure Vault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CryptoJS for secure client-side encryption -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 950: '#030712', 900: '#0b0f19', 850: '#111827', 800: '#1f2937', 700: '#374151', 600: '#4b5563' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #030712; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+    </style>
+</head>
+<body id="body-root" class="bg-dark-950 text-slate-100 min-h-screen flex flex-col md:flex-row selection:bg-indigo-500 selection:text-white">
+
+    <!-- Password Lock Screen Overlay -->
+    <div id="auth-overlay" class="fixed inset-0 bg-dark-950 z-50 flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-dark-800 rounded-3xl w-full max-w-md p-8 shadow-2xl flex flex-col gap-6 text-center">
+            <div class="flex flex-col items-center gap-3">
+                <div class="bg-indigo-600/20 text-indigo-400 p-4 rounded-2xl text-xl">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h2 id="auth-title" class="font-bold text-white text-xl">Unlock Your Vault</h2>
+                <p id="auth-desc" class="text-xs text-slate-400">Enter your master password to decrypt and access your protected texts.</p>
+            </div>
+            <div class="flex flex-col gap-3">
+                <input type="password" id="auth-password" placeholder="Enter password..." 
+                    class="w-full bg-dark-950 border border-dark-800 rounded-xl px-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-center font-mono">
+                <button onclick="handleAuthentication()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-3.5 rounded-xl font-semibold transition shadow-lg shadow-indigo-600/30">
+                    Unlock Vault
+                </button>
+            </div>
+            <p id="auth-error" class="text-xs text-rose-400 font-medium hidden">Incorrect password! Please try again.</p>
+        </div>
+    </div>
+
+    <!-- Left Sidebar Panel for Tabs -->
+    <aside class="w-full md:w-72 bg-dark-900 border-r border-dark-800 flex flex-col justify-between shrink-0 select-none">
+        <div>
+            <!-- Sidebar Header / Brand -->
+            <div class="p-5 border-b border-dark-800 flex items-center justify-between">
+                <div>
+                    <h1 class="font-bold tracking-wider text-sm text-slate-100 uppercase">ADMIN KUNGKANG</h1>
+                    <p class="text-[10px] text-slate-400">masterkonams</p>
+                </div>
+                <button onclick="lockVault()" title="Lock Vault" class="text-slate-400 hover:text-rose-400 bg-dark-800 hover:bg-dark-700 p-2 rounded-xl transition">
+                    <i class="fa-solid fa-lock text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Tabs Navigation List -->
+            <div class="p-3">
+                <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">Workspace Tabs</div>
+                <div id="tabs-container" class="flex flex-col gap-1.5 max-h-[calc(100vh-220px)] overflow-y-auto">
+                    <!-- Dynamic side tabs injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Footer / Add Button -->
+        <div class="p-4 border-t border-dark-800 bg-dark-950/40">
+            <button onclick="openNewTabModal()" id="sidebar-add-btn" class="w-full text-white text-xs py-3 px-4 rounded-xl font-semibold transition flex items-center justify-center gap-2 shadow-lg" style="background-color: var(--theme-color)">
+                <i class="fa-solid fa-plus text-[10px]"></i> Add Tab Slot
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 min-h-screen p-4 sm:p-8 flex flex-col gap-6 max-w-5xl mx-auto w-full">
+        
+        <!-- Active Tab Header Info -->
+        <div class="flex items-center justify-between border-b border-dark-800 pb-4">
+            <div>
+                <h2 id="current-tab-title" class="text-xl font-bold text-white tracking-tight">Loading...</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Type imo gusto nya <span id="enter-highlight" class="font-semibold" style="color: var(--theme-color)">Enter</span> para ma save</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="clearCurrentTabEntries()" class="text-xs text-rose-400 hover:text-white bg-dark-900 hover:bg-rose-600/80 border border-dark-800 hover:border-rose-500 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 font-semibold">
+                    <i class="fa-solid fa-trash-can text-[11px]"></i> Clear Tab
+                </button>
+            </div>
+        </div>
+
+        <!-- Continuous Input Box -->
+        <div id="input-box-wrapper" class="bg-dark-900 border border-dark-800 rounded-2xl p-4 sm:p-5 shadow-2xl transition">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-dark-800 text-xs text-slate-400">
+                <span id="live-stream-label" class="flex items-center gap-2 font-semibold" style="color: var(--theme-color)">
+                    <i class="fa-solid fa-pen-nib"></i> Live Input Stream
+                </span>
+                <span class="bg-dark-800 text-slate-300 px-2.5 py-1 rounded-lg text-[10px] font-mono border border-dark-700 shadow-sm">Hit Enter ↵ to commit</span>
+            </div>
+            <textarea id="live-input" rows="3" placeholder="Type script or discord code here, then press Enter..." 
+                class="w-full bg-transparent text-slate-100 placeholder-slate-600 text-sm focus:outline-none resize-none font-mono"></textarea>
+        </div>
+
+        <!-- Copy-Ready Boxes Stream Container -->
+        <div id="entries-container" class="flex flex-col gap-4 pb-16">
+            <!-- Dynamic entries load here -->
+        </div>
+
+    </main>
+
+    <!-- Modal: Add New Tab -->
+    <div id="tab-modal" class="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-dark-900 border border-dark-800 rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-2xl flex flex-col gap-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div id="modal-icon-bg" class="p-2.5 rounded-xl" style="background-color: rgba(var(--theme-rgb), 0.2); color: var(--theme-color)"><i class="fa-solid fa-folder-plus text-sm"></i></div>
+                    <h3 class="font-bold text-white text-base">Create New Tab Slot</h3>
+                </div>
+                <button onclick="closeNewTabModal()" class="text-slate-400 hover:text-white transition w-8 h-8 rounded-full bg-dark-800 flex items-center justify-center"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Tab Name</label>
+                <input type="text" id="new-tab-name" placeholder="e.g. Lua Scripts, Discord Codes..." 
+                    class="w-full bg-dark-950 border border-dark-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2">
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeNewTabModal()" class="bg-dark-800 hover:bg-dark-700 text-slate-300 text-xs px-4 py-2.5 rounded-xl font-semibold transition">Cancel</button>
+                <button onclick="createTab()" id="modal-create-btn" class="text-white text-xs px-5 py-2.5 rounded-xl font-semibold transition shadow-lg" style="background-color: var(--theme-color)">Create Tab</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 text-white text-xs px-4 py-3 rounded-2xl shadow-2xl opacity-0 translate-y-3 pointer-events-none transition-all duration-300 z-50 flex items-center gap-2.5 font-semibold" style="background-color: var(--theme-color)">
+        <i class="fa-solid fa-circle-check text-sm"></i> <span id="toast-msg">Copied to clipboard!</span>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        const neonColors = [
+            { hex: '#6366f1', rgb: '99, 102, 241' },   // Indigo
+            { hex: '#10b981', rgb: '16, 185, 129' },  // Emerald
+            { hex: '#8b5cf6', rgb: '139, 92, 246' },  // Violet
+            { hex: '#f43f5e', rgb: '244, 63, 94' },   // Rose
+            { hex: '#f59e0b', rgb: '245, 158, 11' },  // Amber
+            { hex: '#06b6d4', rgb: '6, 182, 212' },   // Cyan
+            { hex: '#ec4899', rgb: '236, 72, 153' },  // Pink
+            { hex: '#84cc16', rgb: '132, 204, 22' }   // Lime
+        ];
+
+        let masterPassword = '';
+        let db = null;
+
+        const defaultDb = {
+            activeTabId: 'tab_1',
+            tabs: [{ id: 'tab_1', name: 'Main Scripts', colorIndex: 0 }],
+            entries: {
+                'tab_1': [{ id: 'e_1', text: 'print("Encrypted sidebar vault is active!")', timestamp: new Date().toLocaleTimeString() }]
+            }
+        };
+
+        // Check if password has been set previously
+        const encryptedData = localStorage.getItem('secure_text_database_encrypted');
+        if (!encryptedData) {
+            document.getElementById('auth-title').textContent = 'Set Master Password';
+            document.getElementById('auth-desc').textContent = 'Create a secure password to encrypt your vault on this browser.';
+        }
+
+        document.getElementById('auth-password').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') handleAuthentication();
+        });
+
+        function handleAuthentication() {
+            const passInput = document.getElementById('auth-password').value;
+            if (!passInput) return;
+
+            masterPassword = passInput;
+            const encryptedStore = localStorage.getItem('secure_text_database_encrypted');
+
+            if (!encryptedStore) {
+                // First time setup: encrypt default db and save
+                db = defaultDb;
+                saveState();
+                unlockApp();
+            } else {
+                try {
+                    // Try to decrypt data
+                    const bytes = CryptoJS.AES.decrypt(encryptedStore, masterPassword);
+                    const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+                    if (!decryptedString) throw new Error('Invalid password');
+                    
+                    db = JSON.parse(decryptedString);
+                    unlockApp();
+                } catch (err) {
+                    document.getElementById('auth-error').classList.remove('hidden');
+                    document.getElementById('auth-password').value = '';
+                }
+            }
+        }
+
+        function unlockApp() {
+            document.getElementById('auth-overlay').classList.add('hidden');
+            renderTabs();
+            renderEntries();
+        }
+
+        function lockVault() {
+            masterPassword = '';
+            db = null;
+            document.getElementById('auth-password').value = '';
+            document.getElementById('auth-error').classList.add('hidden');
+            document.getElementById('auth-overlay').classList.remove('hidden');
+            document.getElementById('auth-password').focus();
+        }
+
+        function saveState() {
+            if (!db || !masterPassword) return;
+            const encryptedString = CryptoJS.AES.encrypt(JSON.stringify(db), masterPassword).toString();
+            localStorage.setItem('secure_text_database_encrypted', encryptedString);
+        }
+
+        function getActiveColor() {
+            const activeTab = db.tabs.find(t => t.id === db.activeTabId) || db.tabs[0];
+            const cIdx = activeTab.colorIndex !== undefined ? activeTab.colorIndex : 0;
+            return neonColors[cIdx % neonColors.length];
+        }
+
+        function applyTheme() {
+            const color = getActiveColor();
+            document.documentElement.style.setProperty('--theme-color', color.hex);
+            document.documentElement.style.setProperty('--theme-rgb', color.rgb);
+
+            const sidebarBtn = document.getElementById('sidebar-add-btn');
+            if (sidebarBtn) sidebarBtn.style.backgroundColor = color.hex;
+
+            const modalBtn = document.getElementById('modal-create-btn');
+            if (modalBtn) modalBtn.style.backgroundColor = color.hex;
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+
+            db.tabs.forEach(tab => {
+                const isActive = tab.id === db.activeTabId;
+                const tabColor = neonColors[(tab.colorIndex !== undefined ? tab.colorIndex : 0) % neonColors.length];
+                
+                const tabEl = document.createElement('div');
+                tabEl.className = `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer select-none group`;
+                
+                if (isActive) {
+                    tabEl.style.backgroundColor = tabColor.hex;
+                    tabEl.style.color = '#ffffff';
+                    tabEl.style.boxShadow = `0 10px 20px -5px rgba(${tabColor.rgb}, 0.4)`;
+                } else {
+                    tabEl.className += ` text-slate-400 hover:bg-dark-800 hover:text-slate-200`;
+                }
+                
+                tabEl.innerHTML = `
+                    <span class="truncate flex-1" onclick="switchTab('${tab.id}')">${escapeHtml(tab.name)}</span>
+                    ${db.tabs.length > 1 ? `<button onclick="event.stopPropagation(); deleteTab('\${tab.id}')" class="w-5 h-5 rounded-lg flex items-center justify-center opacity-50 group-hover:opacity-100 hover:bg-black/30 transition ml-2"><i class="fa-solid fa-xmark text-[10px]"></i></button>` : ''}
+                `;
+                container.appendChild(tabEl);
+            });
+
+            const activeTab = db.tabs.find(t => t.id === db.activeTabId) || db.tabs[0];
+            document.getElementById('current-tab-title').textContent = activeTab.name;
+            applyTheme();
+        }
+
+        function renderEntries() {
+            const container = document.getElementById('entries-container');
+            container.innerHTML = '';
+
+            const currentEntries = db.entries[db.activeTabId] || [];
+            const color = getActiveColor();
+
+            if (currentEntries.length === 0) {
+                container.innerHTML = `
+                    <div class="border border-dashed border-dark-800 rounded-2xl p-12 text-center text-slate-500 text-xs bg-dark-900/30">
+                        <i class="fa-regular fa-note-sticky text-3xl mb-3 opacity-40" style="color: ${color.hex}"></i>
+                        <p class="font-medium text-slate-400">No text entries in this tab yet.</p>
+                        <p class="text-[11px] text-slate-600 mt-1">Type in the box above and press Enter to commit your first block.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            [...currentEntries].reverse().forEach(entry => {
+                const card = document.createElement('div');
+                card.className = 'bg-dark-900 border border-dark-800 hover:border-dark-700 rounded-2xl p-4.5 shadow-xl flex flex-col gap-3 transition group';
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-dark-800 pb-2.5">
+                        <span class="flex items-center gap-1.5 font-mono"><i class="fa-regular fa-clock" style="color: ${color.hex}"></i>${entry.timestamp}</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="copyText('${encodeURIComponent(entry.text)}')" class="bg-dark-800 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 font-semibold text-xs border border-dark-700 shadow-sm" onmouseover="this.style.backgroundColor='${color.hex}'" onmouseout="this.style.backgroundColor=''">
+                                <i class="fa-regular fa-copy"></i> Copy
+                            </button>
+                            <button onclick="deleteEntry('${entry.id}')" class="bg-dark-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 px-2.5 py-1.5 rounded-xl transition border border-dark-700 hover:border-rose-500/40">
+                                <i class="fa-solid fa-trash-can text-[11px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <pre class="bg-dark-950 p-4 rounded-xl text-xs font-mono text-slate-200 overflow-x-auto whitespace-pre-wrap break-all border border-dark-800/80 shadow-inner">${escapeHtml(entry.text)}</pre>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function switchTab(id) {
+            db.activeTabId = id;
+            if (!db.entries[id]) db.entries[id] = [];
+            saveState();
+            renderTabs();
+            renderEntries();
+        }
+
+        function openNewTabModal() {
+            document.getElementById('new-tab-name').value = '';
+            document.getElementById('tab-modal').classList.remove('hidden');
+            document.getElementById('new-tab-name').focus();
+        }
+
+        function closeNewTabModal() {
+            document.getElementById('tab-modal').classList.add('hidden');
+        }
+
+        function createTab() {
+            const nameInput = document.getElementById('new-tab-name');
+            const name = nameInput.value.trim();
+            if (!name) return;
+
+            const randomColorIndex = Math.floor(Math.random() * neonColors.length);
+
+            const newId = 'tab_' + Date.now();
+            db.tabs.push({ id: newId, name: name, colorIndex: randomColorIndex });
+            db.entries[newId] = [];
+            db.activeTabId = newId;
+
+            saveState();
+            closeNewTabModal();
+            renderTabs();
+            renderEntries();
+        }
+
+        function deleteTab(id) {
+            if (db.tabs.length <= 1) return;
+            db.tabs = db.tabs.filter(t => t.id !== id);
+            delete db.entries[id];
+
+            if (db.activeTabId === id) {
+                db.activeTabId = db.tabs[0].id;
+            }
+
+            saveState();
+            renderTabs();
+            renderEntries();
+        }
+
+        function clearCurrentTabEntries() {
+            if (confirm('Clear all texts in this tab?')) {
+                db.entries[db.activeTabId] = [];
+                saveState();
+                renderEntries();
+            }
+        }
+
+        function deleteEntry(entryId) {
+            db.entries[db.activeTabId] = db.entries[db.activeTabId].filter(e => e.id !== entryId);
+            saveState();
+            renderEntries();
+        }
+
+        const liveInput = document.getElementById('live-input');
+        liveInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const text = liveInput.value.trim();
+                if (!text) return;
+
+                if (!db.entries[db.activeTabId]) {
+                    db.entries[db.activeTabId] = [];
+                }
+
+                db.entries[db.activeTabId].push({
+                    id: 'e_' + Date.now(),
+                    text: text,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                });
+
+                saveState();
+                liveInput.value = '';
+                renderEntries();
+            }
+        });
+
+        function copyText(encodedText) {
+            const text = decodeURIComponent(encodedText);
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('opacity-0', 'translate-y-3', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-3', 'pointer-events-none');
+            }, 2000);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
